@@ -151,8 +151,12 @@ function downloadCard(event) {
 
   // Use a slight delay to ensure everything is rendered
   setTimeout(() => {
+    // Dynamic scale for stability (lower on mobile to prevent crashes)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const captureScale = isMobile ? 1.5 : 2;
+
     html2canvas(card, {
-      scale: 2, // Higher scale for premium quality
+      scale: captureScale, 
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#0a0a0a",
@@ -161,10 +165,10 @@ function downloadCard(event) {
       const dataUrl = canvas.toDataURL("image/png", 1.0);
       
       // Mobile Share or Save check
-      if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      if (isMobile && navigator.share) {
         try {
-          // Convert dataUrl to a blob/file for sharing
-          const blob = await (await fetch(dataUrl)).blob();
+          // Convert to blob more reliably for sharing
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
           const file = new File([blob], `Eid-Mubarak-Card.png`, { type: 'image/png' });
           
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -173,12 +177,11 @@ function downloadCard(event) {
               title: 'Eid Mubarak Card',
               text: 'Generated with Luxury Eid Card Generator'
             });
-            downloadBtn.innerText = originalText;
-            downloadBtn.disabled = false;
-            return;
+            return; // Exit if share was successful
           }
         } catch (err) {
           console.error("Share error:", err);
+          // Continue to fallback if share fails
         }
       }
 
