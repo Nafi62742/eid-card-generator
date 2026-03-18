@@ -145,11 +145,46 @@ function downloadCard(event) {
       allowTaint: true,
       backgroundColor: "#0a0a0a",
       logging: false,
-    }).then(canvas => {
+    }).then(async canvas => {
+      const dataUrl = canvas.toDataURL("image/png", 1.0);
+      
+      // Mobile Share or Save check
+      if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        try {
+          // Convert dataUrl to a blob/file for sharing
+          const blob = await (await fetch(dataUrl)).blob();
+          const file = new File([blob], `Eid-Mubarak-Card.png`, { type: 'image/png' });
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'Eid Mubarak Card',
+              text: 'Generated with Luxury Eid Card Generator'
+            });
+            downloadBtn.innerText = originalText;
+            downloadBtn.disabled = false;
+            return;
+          }
+        } catch (err) {
+          console.error("Share error:", err);
+        }
+      }
+
+      // Default Download for Web/PC or fallback for mobile
       const link = document.createElement("a");
       link.download = `Eid-Mubarak-Card-${Date.now()}.png`;
-      link.href = canvas.toDataURL("image/png", 1.0);
+      link.href = dataUrl;
       link.click();
+      
+      // If none of above worked well for mobile (e.g. Safari), 
+      // maybe open in new tab as fallback
+      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        const newWindow = window.open();
+        newWindow.document.write('<p>Long press the image below to save it to your photos ✨</p>');
+        newWindow.document.write(`<img src="${dataUrl}" style="max-width: 100%; height: auto;"/>`);
+        newWindow.document.close();
+      }
+
     }).catch(err => {
       console.error("Capture Error:", err);
       alert("Something went wrong while drawing the card.");
