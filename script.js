@@ -137,6 +137,18 @@ function downloadCard(event) {
   downloadBtn.innerText = "Generating...";
   downloadBtn.disabled = true;
 
+  // Temporary modifications to make html2canvas more stable
+  const goldHead = card.querySelector('h2');
+  const originalHeadingStyle = goldHead ? goldHead.style.cssText : "";
+
+  if (goldHead) {
+    // Replace gradient with solid gold for capture stability
+    goldHead.style.background = "none";
+    goldHead.style.webkitTextFillColor = "#D4AF37";
+    goldHead.style.color = "#D4AF37";
+    goldHead.style.backgroundClip = "none";
+  }
+
   // Use a slight delay to ensure everything is rendered
   setTimeout(() => {
     html2canvas(card, {
@@ -189,6 +201,7 @@ function downloadCard(event) {
       console.error("Capture Error:", err);
       alert("Something went wrong while drawing the card.");
     }).finally(() => {
+      if (goldHead) goldHead.style.cssText = originalHeadingStyle;
       downloadBtn.innerText = originalText;
       downloadBtn.disabled = false;
     });
