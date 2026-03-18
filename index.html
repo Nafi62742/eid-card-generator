@@ -75,6 +75,7 @@
               id="sender"
               class="input-field"
               placeholder="Your Name"
+              oninput="updateCardPreview()"
             />
           </div>
 
@@ -85,6 +86,7 @@
               id="receiver"
               class="input-field"
               placeholder="Recipient Name"
+              oninput="updateCardPreview()"
             />
           </div>
 
@@ -126,7 +128,43 @@
               rows="3"
               class="input-field"
               placeholder="Write your message..."
+              oninput="updateCardPreview()"
             ></textarea>
+          </div>
+
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <input 
+                type="checkbox" 
+                id="showQR" 
+                onchange="updateCardPreview()"
+                class="w-5 h-5 rounded border-white/10 bg-white/5 text-gold-500 focus:ring-gold-500 cursor-pointer"
+              >
+              <label for="showQR" class="label-xs mb-0 cursor-pointer">Include QR Code</label>
+            </div>
+            
+            <div id="qrInputContainer" class="hidden space-y-3">
+              <div>
+                <label class="label-xs">Phone Number (for QR Code)</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  class="input-field"
+                  placeholder="+880123456789"
+                  oninput="updateCardPreview()"
+                />
+              </div>
+              <div>
+                <label class="label-xs">Optional: QR Code Text or URL</label>
+                <input
+                  type="text"
+                  id="qrData"
+                  class="input-field"
+                  placeholder="https://example.com"
+                  oninput="updateCardPreview()"
+                />
+              </div>
+            </div>
           </div>
 
           <div class="pt-4 space-y-3">
@@ -137,6 +175,7 @@
               Generate Card
             </button>
             <button
+              id="downloadBtn"
               onclick="downloadCard(event)"
               class="btn-secondary"
             >
@@ -167,6 +206,7 @@
 
     <!-- Script dependencies -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

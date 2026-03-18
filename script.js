@@ -22,22 +22,39 @@ function applyPreset() {
   const preset = document.getElementById("preset").value;
   if (preset) {
     document.getElementById("message").value = preset;
+    updateCardPreview();
   }
 }
 
 function updateCardPreview() {
   const card = document.getElementById("card");
+  const showQR = document.getElementById("showQR").checked;
+  const qrInputContainer = document.getElementById("qrInputContainer");
+  
+  if (showQR) {
+    qrInputContainer.classList.remove("hidden");
+  } else {
+    qrInputContainer.classList.add("hidden");
+  }
+
   if (!uploadedImage) return;
 
-  // Update card aspect ratio to match the image
-  card.style.aspectRatio = imageAspectRatio;
+  const phone = document.getElementById("phone").value;
+  const qrData = document.getElementById("qrData").value;
+  
+  // Decide what data goes into the QR
+  let qrFinalContent = window.location.href; // Fallback
+  if (phone) {
+    qrFinalContent = `tel:${phone}`;
+  } else if (qrData) {
+    qrFinalContent = qrData;
+  }
 
   const sender = document.getElementById("sender").value || "Your Name";
   const receiver = document.getElementById("receiver").value || "Recipient";
   const message = document.getElementById("message").value || "Wishing you a blessed Eid filled with joy and prosperity.";
   const fontChoice = document.getElementById("fontChoice")?.value || "serif";
 
-  // Map choices to actual font family names
   const fontMap = {
     'serif': "'Playfair Display', serif",
     'script': "'Great Vibes', cursive",
@@ -48,32 +65,50 @@ function updateCardPreview() {
   };
   const activeFont = fontMap[fontChoice] || fontMap['serif'];
 
+  // Update card inner structure
+  card.style.aspectRatio = "auto";
+  card.className = "relative w-full max-w-[800px] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(245,176,2,0.15)] bg-luxury flex flex-col border border-white/5";
+
   card.innerHTML = `
-    <!-- Ambient Blurred Background -->
-    <img src="${uploadedImage}" class="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110 select-none pointer-events-none" />
-    
-    <!-- Centered Main Image -->
-    <div class="absolute inset-0 flex items-center justify-center p-8 z-10">
-      <img src="${uploadedImage}" class="max-w-full max-h-full rounded-xl shadow-2xl border border-white/10 shrink-0" />
+    <!-- Top Image Container -->
+    <div class="relative w-full bg-[#0a0a0a] overflow-hidden" id="cardImageContainer">
+      <img src="${uploadedImage}" class="w-full h-auto block" />
+      
+      <!-- Optional QR Code (Top Right) -->
+      ${showQR ? `
+        <div class="absolute top-4 right-4 p-2 bg-white rounded-lg shadow-xl z-50">
+          <div id="qrcode"></div>
+        </div>
+      ` : ''}
     </div>
     
-    <!-- Gradient Overlay -->
-    <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/95 via-black/30 to-transparent z-20"></div>
-    
-    <!-- Content Overlay -->
-    <div class="absolute inset-0 z-30 flex flex-col justify-end p-8 md:p-12 text-left" style="font-family: ${activeFont};">
-      <h2 class="text-3xl md:text-5xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-gold-100 mb-2 drop-shadow-2xl">
+    <!-- Bottom Text Content -->
+    <div class="p-8 md:p-10 bg-luxury border-t border-white/5" style="font-family: ${activeFont};">
+      <h2 class="text-3xl md:text-5xl font-bold gold-text mb-4">
         Eid Mubarak 🌙
       </h2>
-      <p id="cardMessage" class="text-slate-100 text-sm md:text-xl lg:text-2xl font-light max-w-2xl leading-relaxed drop-shadow-lg">
-        Dear ${receiver}, <br class="hidden md:block"/> ${message}
-      </p>
-      <div class="h-1 w-24 bg-gold-500/70 my-4 rounded-full"></div>
-      <p id="cardFrom" class="text-gold-300 font-semibold tracking-[0.2em] uppercase text-xs md:text-sm lg:text-base drop-shadow-lg" style="font-family: 'Poppins', sans-serif;">
+      <div id="cardMessage" class="text-slate-100 text-sm md:text-lg lg:text-xl font-light leading-relaxed mb-6">
+        <span class="text-gold-400 font-semibold block mb-2">Dear ${receiver},</span>
+        ${message.replace(/\n/g, '<br>')}
+      </div>
+      <div class="h-[1px] w-full bg-gradient-to-r from-gold-500/50 to-transparent mb-6"></div>
+      <p id="cardFrom" class="text-gold-300 font-semibold tracking-[0.2em] uppercase text-xs md:text-sm" style="font-family: 'Poppins', sans-serif;">
         With Love, ${sender}
       </p>
     </div>
   `;
+
+  // Generate QR Code if enabled
+  if (showQR) {
+    new QRCode(document.getElementById("qrcode"), {
+      text: qrFinalContent,
+      width: 80,
+      height: 80,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
 }
 
 function generateCard() {
@@ -96,49 +131,31 @@ function downloadCard(event) {
   }
 
   const card = document.getElementById("card");
-  const downloadBtn = event.currentTarget;
+  const downloadBtn = document.getElementById("downloadBtn");
   const originalText = downloadBtn.innerText;
   
   downloadBtn.innerText = "Generating...";
   downloadBtn.disabled = true;
 
-  // Temporary modifications to make html2canvas more stable
-  const ambientLayer = card.querySelector('img[class*="blur"]');
-  const goldHead = card.querySelector('h2');
-  
-  // Store original styles to restore them later
-  const originalAmbientOpacity = ambientLayer ? ambientLayer.style.opacity : "0.4";
-  const originalHeadingStyle = goldHead ? goldHead.style.cssText : "";
-
-  if (ambientLayer) ambientLayer.style.opacity = "0"; // Hide blur layer to avoid rendering issues
-  if (goldHead) {
-    // Replace gradient with solid gold for capture stability
-    goldHead.style.background = "none";
-    goldHead.style.webkitTextFillColor = "#D4AF37";
-    goldHead.style.color = "#D4AF37";
-  }
-
+  // Use a slight delay to ensure everything is rendered
   setTimeout(() => {
     html2canvas(card, {
-      scale: 1.5, // Reduced scale for better stability
+      scale: 2, // Higher scale for premium quality
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#0a0a0a",
-      logging: true, // Enable logging for debugging if needed
+      logging: false,
     }).then(canvas => {
       const link = document.createElement("a");
       link.download = `Eid-Mubarak-Card-${Date.now()}.png`;
-      link.href = canvas.toDataURL("image/png", 0.9);
+      link.href = canvas.toDataURL("image/png", 1.0);
       link.click();
     }).catch(err => {
       console.error("Capture Error:", err);
-      alert("Something went wrong while drawing the card. Try again or use a smaller photo.");
+      alert("Something went wrong while drawing the card.");
     }).finally(() => {
-      // Restore styles for the user's view
-      if (ambientLayer) ambientLayer.style.opacity = originalAmbientOpacity;
-      if (goldHead) goldHead.style.cssText = originalHeadingStyle;
       downloadBtn.innerText = originalText;
       downloadBtn.disabled = false;
     });
-  }, 150);
+  }, 300);
 }
